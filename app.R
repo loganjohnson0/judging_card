@@ -39,7 +39,7 @@ ui <- page_navbar(
     sidebar = sidebar(width = 400, "Hello!",
   
       selectizeInput(inputId = "person", label = "Student Name (School)", 
-          choices = NULL, multiple = FALSE, selected = character(0),
+          choices = NULL, multiple = FALSE,
           options = list(placeholder = "Select Student", plugins = list("remove_button"), 
           closeAfterSelect = TRUE))),
 
