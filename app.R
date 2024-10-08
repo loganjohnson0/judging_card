@@ -9,8 +9,7 @@ library(readr)
 library(ggrepel)
 library(tibble)
 library(htmltools)
-
-# thematic::thematic_on()
+library(lubridate)
 
 load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/national_western_individual.RData"))
 
@@ -41,7 +40,8 @@ ui <- page_navbar(
   
       selectizeInput(inputId = "person", label = "Student Name (School)", 
           choices = NULL, multiple = TRUE, selected = character(0),
-          options = list(placeholder = "Select Student", plugins = list("remove_button"), closeAfterSelect = TRUE, maxItems = "1"))),
+          options = list(placeholder = "Select Student", plugins = list("remove_button"), 
+          closeAfterSelect = TRUE, maxItems = "1"))),
 
     nav_spacer(),
     
@@ -79,9 +79,8 @@ server <- function(input, output, session) {
       ggthemes::theme_clean() +
       theme(legend.position = "none") +
       ggtitle(label = stringr::str_replace(input$person, "_", " for "),
-      subtitle = paste(lubridate::year(filtered_data$date), filtered_data$contest_name[1]))
+      subtitle = paste(lubridate::year(filtered_data$date[1]), filtered_data$contest_name[1]))
   })
+}
 
-  }
-
-shiny::shinyApp(ui = ui, server = server)
+shinyApp(ui = ui, server = server)
