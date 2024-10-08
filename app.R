@@ -10,6 +10,8 @@ library(ggrepel)
 library(tibble)
 library(htmltools)
 
+# thematic::thematic_on()
+
 load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/national_western_individual.RData"))
 
 data <- data |> 
@@ -26,28 +28,40 @@ student_choices <- setNames(students$student_school, students$student_label)
 max_scores <- tibble::tibble(results_categories = c("Beef Grading", "Beef Judging", "Lamb Judging", "Overall", "Overall Beef", "Pork Judging", "Total Placing", "Total Reas/Quest", "Specifications"),
     max_score = c(300, 300, 150, 1150, 600, 300, 500, 250, 100))
 
-ui <- page_fluid(
-  navset_tab(
-    nav_panel("Welcome!","Hello! Welcome to a shiny app that will help you explore the history of meat judging based on results from prior Judging Card contests.
+ui <- page_navbar(
+    theme = bs_theme(
+        preset = "lux"),
+    lang = "en",
 
-You can explore Individual results for any individual, Team results for any team, and directly compare two individuals or teams.
+    title = tags$span(
 
-Click on the tabs above to begin exploring!"),
+      "Intercollegiate Meat Judging Results"),
+    
+    sidebar = sidebar(width = 400, "Hello!",
+  
+      selectizeInput(inputId = "person", label = "Student Name (School)", 
+          choices = NULL, multiple = TRUE, selected = character(0),
+          options = list(placeholder = "Select Student", plugins = list("remove_button"), closeAfterSelect = TRUE, maxItems = "1"))),
+
+    nav_spacer(),
+    
     nav_panel("Individual Results",
-      selectizeInput("person", "Student Name (School)", choices = NULL),
-      plotOutput("plot")
-    ),
-    nav_panel("Team Results", "Page B content"),
-    nav_panel("Comparison of Individuals", "Page C content")
+        layout_columns(
+      card(
+        card_header("Selected Person and University",
+            class = "bg-dark")),
+        plotOutput("plot"), max_height = 450, col_widths = c(-1, 10, -1))),
+
+    nav_panel("Team Results", "Coming Soon!"),
+
   )
-)
 
 server <- function(input, output, session) {
 
-  updateSelectizeInput(session, "person", choices = student_choices, server = TRUE)
+  updateSelectizeInput(session, inputId = "person", choices = student_choices, server = TRUE)
 
   output$plot <- renderPlot({
-    req(input$person)  
+    req(input$person)
 
     filtered_data <- data |> 
       filter(student_school == input$person)
@@ -58,12 +72,14 @@ server <- function(input, output, session) {
       color = contest_name)) +
       geom_point() +
       ggrepel::geom_text_repel(aes(label = score), nudge_y = 0.5) +
+      ggrepel::geom_label_repel(aes(label = rank, x = 0), nudge_y = 0.4) +
       geom_point(data = max_scores, aes(x = max_score, y = results_categories), color = "green", inherit.aes = FALSE) +
       scale_x_continuous(limits = c(0, 1200), breaks = pretty_breaks(n = 12)) +
       scale_color_colorblind() +
-      theme_clean() +
-      theme(legend.position = "bottom") +
-      facet_wrap(~ school_name, ncol = 1)
+      ggthemes::theme_clean() +
+      theme(legend.position = "none") +
+      ggtitle(label = stringr::str_replace(input$person, "_", " for "),
+      subtitle = paste(lubridate::year(filtered_data$date), filtered_data$contest_name[1]))
   })
 
   }
