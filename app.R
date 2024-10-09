@@ -33,24 +33,28 @@ ui <- page_navbar(
     lang = "en",
 
     title = tags$span(
-
       "Intercollegiate Meat Judging Results"),
     
     sidebar = sidebar(width = 400, "Hello!",
   
-      selectizeInput(inputId = "person", label = "Student Name (School)", 
+      selectizeInput(
+          inputId = "person", 
+          label = "Student Name (School)", 
           choices = NULL, multiple = FALSE,
-          options = list(placeholder = "Select Student", plugins = list("remove_button"), 
-          closeAfterSelect = TRUE))),
+          options = list(
+            placeholder = "Select Student", 
+            plugins = list("remove_button"), 
+            closeAfterSelect = TRUE))),
 
     nav_spacer(),
     
     nav_panel("Individual Results",
+
         layout_columns(
-      card(
-        card_header("Selected Person and University",
-            class = "bg-dark")),
-        plotOutput("plot"), max_height = 450, col_widths = c(-1, 10, -1))),
+          card(
+            card_header("Selected Person and University",
+                class = "bg-dark")),
+            plotOutput("plot"), max_height = 450, col_widths = c(-1, 10, -1))),
 
     nav_panel("Team Results", "Coming Soon!"),
 
@@ -77,9 +81,7 @@ server <- function(input, output, session) {
       scale_x_continuous(limits = c(0, 1200), breaks = pretty_breaks(n = 12)) +
       scale_color_colorblind() +
       ggthemes::theme_clean() +
-      theme(legend.position = "none") +
-      ggtitle(label = stringr::str_replace(input$person, "_", " for "),
-      subtitle = paste(lubridate::year(filtered_data$date[1]), filtered_data$contest_name[1]))
+      theme(legend.position = "none")
   })
 }
 
