@@ -42,6 +42,7 @@ jobs:
           with:
             packages:
               cran::shinylive@0.2.0
+            use-cache: false
 
         # Save R package library to cache
         - name: Always Save Primes
