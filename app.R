@@ -88,7 +88,7 @@ ui <- page_navbar(
 
               
       conditionalPanel(
-          condition = "input.nav == 'Team Results' &&input.team_year != ''",
+          condition = "input.nav == 'Team Results' && input.team_contest != '' && input.team_year != ''",
           selectizeInput(inputId = "team_name",
             label = "Finally, Select the University",
             multiple = TRUE, 
