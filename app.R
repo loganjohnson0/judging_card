@@ -33,17 +33,17 @@ ui <- page_navbar(
     lang = "en",
 
     title = tags$span(
+
       "Intercollegiate Meat Judging Results"),
     
     sidebar = sidebar(width = 400, "Hello!",
   
-      selectizeInput(
-          inputId = "person", 
+      selectizeInput(inputId = "person", 
           label = "Student Name (School)", 
           choices = NULL, multiple = FALSE,
           options = list(
             placeholder = "Select Student", 
-            plugins = list("remove_button"), 
+              plugins = list("remove_button"), 
             closeAfterSelect = TRUE))),
 
     nav_spacer(),
