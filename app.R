@@ -4,7 +4,6 @@ library(ggplot2)
 library(ggthemes)
 library(scales)
 library(dplyr)
-# library(tibble)
 library(htmltools)
 library(lubridate)
 library(markdown)
@@ -12,19 +11,13 @@ library(markdown)
 load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/individual.RData"))
 load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/team.RData"))
 
-# individual <- readr::read_csv(file = c("~/Desktop/Judging_Card_AMSA/Cleaned_Results/National_Western/2024-09-29_National_Western_Individual_Results.csv",
-#                                         "~/Desktop/Judging_Card_AMSA/Cleaned_Results/Southwestern/2024-10-06_Southwestern_Individual_Results.csv"))
-
-# team <- readr::read_csv(file = c("~/Desktop/Judging_Card_AMSA/Cleaned_Results/National_Western/2024-09-29_National_Western_Team_Results.csv",
-#                                         "~/Desktop/Judging_Card_AMSA/Cleaned_Results/Southwestern/2024-10-06_Southwestern_Team_Results.csv"))
-
 individual <- individual |> 
-  mutate(student_school = paste(student_name, school_name, sep = "_"))
+  dplyr::mutate(student_school = paste(student_name, school_name, sep = "_"))
 
 students <- individual |> 
-  distinct(student_name, school_name, .keep_all = TRUE) |> 
-  arrange(student_name, school_name) |> 
-  mutate(student_label = paste0(student_name, " (", school_name, ")"),
+  dplyr::distinct(student_name, school_name, .keep_all = TRUE) |> 
+  dplyr::arrange(student_name, school_name) |> 
+  dplyr::mutate(student_label = paste0(student_name, " (", school_name, ")"),
         student_school = paste(student_name, school_name, sep = "_"))
 
 student_choices <- setNames(students$student_school, students$student_label)
@@ -153,15 +146,6 @@ server <- function(input, output, session) {
                           closeAfterSelect = TRUE,
                           placeholder = "Individual's Name"))
   
-  # individual_max_scores <- tibble::tibble(results_categories = c("Beef Grading", "Beef Judging", "Lamb Judging", 
-  #     "Overall", "Overall Beef", "Pork Judging", 
-  #     "Total Placing", "Total Reas/Quest", "Specifications"),
-  #   max_score = c(300, 300, 150, 1150, 600, 300, 500, 250, 100))
-  
-  # team_max_scores <- tibble::tibble(results_categories = c("Beef Grading", "Beef Judging", "Lamb Judging", 
-  #   "Overall", "Overall Beef", "Pork Judging", 
-  #   "Total Placing", "Total Reas/Quest", "Specifications"),
-  # max_score = c(300, 300, 150, 1150, 600, 300, 500, 250, 100)*4)
 
   output$individual_plot <- renderPlot({
     req(input$individual_contest)
@@ -175,8 +159,6 @@ server <- function(input, output, session) {
       ggplot2::geom_point() +
       ggplot2::geom_text(aes(label = score), nudge_y = 0.5) +
       ggplot2::geom_label(aes(label = rank, x = 0), nudge_y = 0.2) +
-      # ggplot2::geom_point(data = individual_max_scores, aes(x = max_score, y = results_categories), 
-      #                     color = "green") +
       ggplot2::scale_x_continuous(limits = c(0, 1200), breaks = pretty_breaks(n = 12)) +
       ggthemes::theme_clean() +
       ggplot2::xlab("Scores") +
@@ -200,8 +182,6 @@ server <- function(input, output, session) {
       ggplot2::geom_point() +
       ggplot2::geom_text(aes(label = score), nudge_y = 0.5) +
       ggplot2::geom_label(aes(label = rank, x = 0), nudge_y = 0.2) +
-      # ggplot2::geom_point(data = team_max_scores, aes(x = max_score, y = results_categories), 
-      #                     color = "green") +
       ggplot2::scale_x_continuous(limits = c(0, 4800), breaks = pretty_breaks(n = 11)) +
       ggthemes::theme_clean() +
       ggplot2::xlab("Scores") +
