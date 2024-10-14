@@ -3,13 +3,11 @@ library(bslib)
 library(ggplot2)
 library(ggthemes)
 library(scales)
-library(tidyr)
 library(dplyr)
-library(readr)
-library(ggrepel)
 library(tibble)
 library(htmltools)
 library(lubridate)
+library(markdown)
 
 load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/individual.RData"))
 load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/team.RData"))
@@ -31,8 +29,6 @@ students <- individual |>
 
 student_choices <- setNames(students$student_school, students$student_label)
 
-
-
 ui <- page_navbar(
     theme = bs_theme(preset = "lux"),
 
@@ -40,7 +36,9 @@ ui <- page_navbar(
 
     title = tags$span("Intercollegiate Meat Judging Results"),
     
-    sidebar = sidebar(width = 400, "Hello!",
+    sidebar = sidebar(
+          width = 350,
+          id = "sidebar",
 
 
   # Individual
@@ -95,27 +93,40 @@ ui <- page_navbar(
             choices = sort(unique(team$school_name)),
             options = list(maxItems = 1, placeholder = "Select University",
                 closeAfterSelect = TRUE))
-          )
-        ),
+        )
+      ),
 
     nav_spacer(),
-    
+
+    nav_panel("Home",
+        layout_columns(
+          card(
+            card_header("Hello!", class = "bg-dark"),
+
+            includeMarkdown("welcome_page.md")
+          ), col_widths = c(-1, 10, -1), max_height = 600
+        )
+      ),
+
     nav_panel("Individual Results",
 
         layout_columns(
           card(
-            card_header("Selected Contest, Individual, and University",
-                class = "bg-dark"),
+            card_header("Selected Contest, Individual, and University", class = "bg-dark"),
 
-            plotOutput("individual_plot")), col_widths = c(-1, 10, -1), max_height = 450)),
+            plotOutput("individual_plot")
+          ), col_widths = c(-1, 10, -1), max_height = 450)
+      ),
 
-    nav_panel("Team Results",  
+    nav_panel("Team Results", 
+    
         layout_columns(
           card(
-            card_header("Selected Contest, Year, and University",
-                class = "bg-dark"),
+            card_header("Selected Contest, Year, and University", class = "bg-dark"),
 
-            plotOutput("team_plot")), col_widths = c(-1, 10, -1), max_height = 450)),
+            plotOutput("team_plot")
+          ), col_widths = c(-1, 10, -1), max_height = 450)
+      ),
 
   )
 
@@ -127,6 +138,13 @@ server <- function(input, output, session) {
     } else if (input$nav == "Team Results") {
       updateSelectizeInput(session, "individual_contest", selected = "")
     }
+  })
+
+  observe({
+    sidebar_toggle(
+      id = "sidebar",
+      open = input$nav != "Home"
+    )
   })
 
   updateSelectizeInput(session, inputId = "individual_person", 
@@ -153,19 +171,16 @@ server <- function(input, output, session) {
       dplyr::filter(contest_name == input$individual_contest) |> 
       dplyr::filter(student_school == input$individual_person)
 
-    ggplot2::ggplot(filtered_individual, aes(
-      x = score,
-      y = reorder(results_categories, -score),
-      color = contest_name)) +
+    ggplot2::ggplot(filtered_individual, aes(x = score, y = reorder(results_categories, -score))) +
       ggplot2::geom_point() +
-      ggrepel::geom_text_repel(aes(label = score), nudge_y = 0.5) +
-      ggrepel::geom_label_repel(aes(label = rank, x = 0), nudge_y = 0.4) +
+      ggplot2::geom_text(aes(label = score), nudge_y = 0.5) +
+      ggplot2::geom_label(aes(label = rank, x = 0), nudge_y = 0.2) +
       ggplot2::geom_point(data = individual_max_scores, aes(x = max_score, y = results_categories), 
-                          color = "green", inherit.aes = FALSE) +
+                          color = "green") +
       ggplot2::scale_x_continuous(limits = c(0, 1200), breaks = pretty_breaks(n = 12)) +
-      ggthemes::scale_color_colorblind() +
       ggthemes::theme_clean() +
-      ggplot2::theme(legend.position = "none") +
+      ggplot2::xlab("Scores") +
+      ggplot2::ylab("Judging Contest Categories") +
       ggtitle(label = stringr::str_replace(input$individual_person, "_", " for "),
               subtitle = paste(lubridate::year(filtered_individual$date), filtered_individual$contest_name))
   })
@@ -181,20 +196,18 @@ server <- function(input, output, session) {
       dplyr::filter(lubridate::year(date) == input$team_year) |> 
       dplyr::filter(school_name == input$team_name)
 
-    ggplot2::ggplot(filtered_team, aes(
-      x = score,
-      y = reorder(results_categories, -score),
-      color = contest_name)) +
+    ggplot2::ggplot(filtered_team, aes(x = score, y = reorder(results_categories, -score))) +
       ggplot2::geom_point() +
       ggrepel::geom_text_repel(aes(label = score), nudge_y = 0.5) +
-      ggrepel::geom_label_repel(aes(label = rank, x = 0), nudge_y = 0.4) +
-      ggplot2::geom_point(data = team_max_scores, aes(x = max_score, y = results_categories), color = "green", inherit.aes = FALSE) +
-      ggplot2::scale_x_continuous(limits = c(0, 4800), breaks = pretty_breaks(n = 24)) +
-      ggthemes::scale_color_colorblind() +
+      ggrepel::geom_label_repel(aes(label = rank, x = 0), nudge_y = 0.2) +
+      ggplot2::geom_point(data = team_max_scores, aes(x = max_score, y = results_categories), 
+                          color = "green") +
+      ggplot2::scale_x_continuous(limits = c(0, 4800), breaks = pretty_breaks(n = 11)) +
       ggthemes::theme_clean() +
-      ggplot2::theme(legend.position = "none") +
+      ggplot2::xlab("Scores") +
+      ggplot2::ylab("Judging Contest Categories") +
       ggtitle(label = input$team_name,
-            subtitle = paste(lubridate::year(filtered_team$date), filtered_team$contest_name))
+              subtitle = paste(lubridate::year(filtered_team$date), filtered_team$contest_name))
   })
 }
 
