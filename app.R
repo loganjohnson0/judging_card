@@ -4,7 +4,7 @@ library(ggplot2)
 library(ggthemes)
 library(scales)
 library(dplyr)
-library(tibble)
+# library(tibble)
 library(htmltools)
 library(lubridate)
 library(markdown)
@@ -153,15 +153,15 @@ server <- function(input, output, session) {
                           closeAfterSelect = TRUE,
                           placeholder = "Individual's Name"))
   
-  individual_max_scores <- tibble::tibble(results_categories = c("Beef Grading", "Beef Judging", "Lamb Judging", 
-      "Overall", "Overall Beef", "Pork Judging", 
-      "Total Placing", "Total Reas/Quest", "Specifications"),
-    max_score = c(300, 300, 150, 1150, 600, 300, 500, 250, 100))
+  # individual_max_scores <- tibble::tibble(results_categories = c("Beef Grading", "Beef Judging", "Lamb Judging", 
+  #     "Overall", "Overall Beef", "Pork Judging", 
+  #     "Total Placing", "Total Reas/Quest", "Specifications"),
+  #   max_score = c(300, 300, 150, 1150, 600, 300, 500, 250, 100))
   
-  team_max_scores <- tibble::tibble(results_categories = c("Beef Grading", "Beef Judging", "Lamb Judging", 
-    "Overall", "Overall Beef", "Pork Judging", 
-    "Total Placing", "Total Reas/Quest", "Specifications"),
-  max_score = c(300, 300, 150, 1150, 600, 300, 500, 250, 100)*4)
+  # team_max_scores <- tibble::tibble(results_categories = c("Beef Grading", "Beef Judging", "Lamb Judging", 
+  #   "Overall", "Overall Beef", "Pork Judging", 
+  #   "Total Placing", "Total Reas/Quest", "Specifications"),
+  # max_score = c(300, 300, 150, 1150, 600, 300, 500, 250, 100)*4)
 
   output$individual_plot <- renderPlot({
     req(input$individual_contest)
@@ -175,8 +175,8 @@ server <- function(input, output, session) {
       ggplot2::geom_point() +
       ggplot2::geom_text(aes(label = score), nudge_y = 0.5) +
       ggplot2::geom_label(aes(label = rank, x = 0), nudge_y = 0.2) +
-      ggplot2::geom_point(data = individual_max_scores, aes(x = max_score, y = results_categories), 
-                          color = "green") +
+      # ggplot2::geom_point(data = individual_max_scores, aes(x = max_score, y = results_categories), 
+      #                     color = "green") +
       ggplot2::scale_x_continuous(limits = c(0, 1200), breaks = pretty_breaks(n = 12)) +
       ggthemes::theme_clean() +
       ggplot2::xlab("Scores") +
@@ -198,10 +198,10 @@ server <- function(input, output, session) {
 
     ggplot2::ggplot(filtered_team, aes(x = score, y = reorder(results_categories, -score))) +
       ggplot2::geom_point() +
-      ggrepel::geom_text_repel(aes(label = score), nudge_y = 0.5) +
-      ggrepel::geom_label_repel(aes(label = rank, x = 0), nudge_y = 0.2) +
-      ggplot2::geom_point(data = team_max_scores, aes(x = max_score, y = results_categories), 
-                          color = "green") +
+      ggplot2::geom_text(aes(label = score), nudge_y = 0.5) +
+      ggplot2::geom_label(aes(label = rank, x = 0), nudge_y = 0.2) +
+      # ggplot2::geom_point(data = team_max_scores, aes(x = max_score, y = results_categories), 
+      #                     color = "green") +
       ggplot2::scale_x_continuous(limits = c(0, 4800), breaks = pretty_breaks(n = 11)) +
       ggthemes::theme_clean() +
       ggplot2::xlab("Scores") +
