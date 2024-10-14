@@ -103,7 +103,7 @@ ui <- page_navbar(
           card(
             card_header("Hello!", class = "bg-dark"),
 
-            includeMarkdown("welcome_page.md")
+            # includeMarkdown("welcome_page.md")
           ), col_widths = c(-1, 10, -1), max_height = 600
         )
       ),
