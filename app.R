@@ -7,6 +7,7 @@ library(dplyr)
 library(htmltools)
 library(lubridate)
 library(stringr)
+webr::install("markdown")
 
 load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/individual.RData"))
 load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/team.RData"))
@@ -96,7 +97,7 @@ ui <- page_navbar(
           card(
             card_header("Hello!", class = "bg-dark"),
 
-            # includeMarkdown("welcome_page.md")
+            includeMarkdown("welcome_page.md")
           ), col_widths = c(-1, 10, -1), max_height = 600
         )
       ),
