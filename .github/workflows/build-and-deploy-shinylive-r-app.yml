@@ -8,7 +8,7 @@ on:
 name: shinylive-app
 
 jobs:
-    publish-shiny-app:
+    publish-app:
       runs-on: ubuntu-latest
       # Only restrict concurrency for non-PR jobs
       concurrency:
@@ -33,7 +33,7 @@ jobs:
           uses: r-lib/actions/setup-r-dependencies@v2
           with:
             packages:
-              cran::shinylive@0.2.0
+              cran::shinylive
   
         # Export the current working directory as the shiny app
         # using the pinned version of the Shinylive R package
@@ -46,7 +46,7 @@ jobs:
         # Make sure to set a retention day to avoid running into a cap
         # This artifact shouldn't be required after deployment onto pages was a success.
         - name: Upload Pages artifact
-          uses: actions/upload-pages-artifact@v3
+          uses: actions/upload-pages-artifact@v2
           with: 
             retention-days: 1
         
@@ -55,4 +55,4 @@ jobs:
         # instead of using `docs/` or the `gh-pages` branch of the repository
         - name: Deploy to GitHub Pages
           id: deployment
-          uses: actions/deploy-pages@v4
+          uses: actions/deploy-pages@v2

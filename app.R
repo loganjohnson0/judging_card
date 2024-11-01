@@ -6,7 +6,7 @@ library(scales)
 library(dplyr)
 library(htmltools)
 library(lubridate)
-library(markdown)
+library(stringr)
 
 load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/individual.RData"))
 load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/team.RData"))
@@ -18,7 +18,7 @@ students <- individual |>
   dplyr::distinct(student_name, school_name, .keep_all = TRUE) |> 
   dplyr::arrange(student_name, school_name) |> 
   dplyr::mutate(student_label = paste0(student_name, " (", school_name, ")"),
-        student_school = paste(student_name, school_name, sep = "_"))
+              student_school = paste(student_name, school_name, sep = "_"))
 
 student_choices <- setNames(students$student_school, students$student_label)
 
