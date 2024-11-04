@@ -9,8 +9,7 @@ library(lubridate)
 library(stringr)
 webr::install("markdown")
 
-load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/individual.RData"))
-load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/team.RData"))
+
 
 individual <- individual |> 
   dplyr::mutate(student_school = paste(student_name, school_name, sep = "_"))
@@ -125,6 +124,9 @@ ui <- page_navbar(
   )
 
 server <- function(input, output, session) {
+
+  load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/individual.RData"))
+  load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/team.RData"))
 
   observeEvent(input$nav, {
     if (input$nav == "Individual Results") {
