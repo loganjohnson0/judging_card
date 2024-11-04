@@ -23,7 +23,7 @@ students <- individual |>
 
 student_choices <- setNames(students$student_school, students$student_label)
 
-ui <- page_navbar(
+ui <- bslib::page_navbar(
     theme = bs_theme(preset = "lux"),
 
     id = "nav",
@@ -127,7 +127,7 @@ ui <- page_navbar(
 server <- function(input, output, session) {
 
 
-  observeEvent(input$nav, {
+  shiny::observeEvent(input$nav, {
     if (input$nav == "Individual Results") {
       updateSelectizeInput(session, "team_contest", selected = "")
     } else if (input$nav == "Team Results") {
@@ -135,21 +135,21 @@ server <- function(input, output, session) {
     }
   })
 
-  observe({
+  shiny::observe({
     sidebar_toggle(
       id = "sidebar",
       open = input$nav != "Home"
     )
   })
 
-  updateSelectizeInput(session, inputId = "individual_person", 
+  shiny::updateSelectizeInput(session, inputId = "individual_person", 
                   choices = student_choices, server = TRUE, selected = "",
                   options = list(maxItems = 1, 
                           closeAfterSelect = TRUE,
                           placeholder = "Individual's Name"))
   
 
-  output$individual_plot <- renderPlot({
+  output$individual_plot <- shiny::renderPlot({
     req(input$individual_contest)
     req(input$individual_person)
 
@@ -170,7 +170,7 @@ server <- function(input, output, session) {
   })
 
 
-  output$team_plot <- renderPlot({
+  output$team_plot <- shiny::renderPlot({
     req(input$team_contest)
     req(input$team_year)
     req(input$team_name)
