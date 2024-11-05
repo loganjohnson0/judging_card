@@ -8,24 +8,23 @@ library(stringr)
 library(nanoparquet)
 webr::install("markdown")
 
+  load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/individual.RData"))
 
-load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/individual.RData"))
+  individual <- individual |> 
+    dplyr::mutate(student_school = paste(student_name, school_name, sep = "_"))
 
-team_url <- "https://raw.githubusercontent.com/loganjohnson0/judging_card/main/All_Team.parquet"
-team_path <- "All_Team.parquet"
-download.file(team_url, team_path)
-team <- nanoparquet::read_parquet(team_path)
+  students <- individual |> 
+    dplyr::distinct(student_name, school_name, .keep_all = TRUE) |> 
+    dplyr::arrange(student_name, school_name) |> 
+    dplyr::mutate(student_label = paste0(student_name, " (", school_name, ")"),
+                student_school = paste(student_name, school_name, sep = "_"))
 
-individual <- individual |> 
-  dplyr::mutate(student_school = paste(student_name, school_name, sep = "_"))
+  student_choices <- setNames(students$student_school, students$student_label)
 
-students <- individual |> 
-  dplyr::distinct(student_name, school_name, .keep_all = TRUE) |> 
-  dplyr::arrange(student_name, school_name) |> 
-  dplyr::mutate(student_label = paste0(student_name, " (", school_name, ")"),
-              student_school = paste(student_name, school_name, sep = "_"))
-
-student_choices <- setNames(students$student_school, students$student_label)
+  team_url <- "https://raw.githubusercontent.com/loganjohnson0/judging_card/main/All_Team.parquet"
+  team_path <- "All_Team.parquet"
+  download.file(team_url, team_path)
+  team <- nanoparquet::read_parquet(team_path)
 
 ui <- bslib::page_navbar(
     theme = bs_theme(preset = "lux"),
@@ -41,6 +40,7 @@ ui <- bslib::page_navbar(
   # Individual
         conditionalPanel(
           condition = "input.nav == 'Individual Results'",
+            
             selectizeInput(inputId = "individual_contest",
               label = "First, Select the Meat Judging Contest",
               choices =  sort(unique(individual$contest_name)), 
@@ -50,7 +50,7 @@ ui <- bslib::page_navbar(
 
       conditionalPanel(
         condition = "input.nav == 'Individual Results' && input.individual_contest != ''",
-
+            
             selectizeInput(inputId = "individual_person", 
               label = "Next, Select the Individual (School)", 
               multiple = TRUE,
@@ -80,7 +80,8 @@ ui <- bslib::page_navbar(
 
       conditionalPanel(
           condition = "input.nav == 'Team Results' && input.team_contest != '' && input.team_year != ''",
-          selectizeInput(inputId = "team_name",
+          
+        selectizeInput(inputId = "team_name",
             label = "Finally, Select the University",
             multiple = TRUE, 
             choices = sort(unique(team$school_name)),
@@ -96,7 +97,7 @@ ui <- bslib::page_navbar(
           card(
             card_header("Hello!", class = "bg-dark"),
 
-            includeMarkdown("welcome_page.md")
+            shiny::includeMarkdown("welcome_page.md")
           ), col_widths = c(-1, 10, -1), max_height = 600
         )
       ),
@@ -159,13 +160,12 @@ server <- function(input, output, session) {
       ggplot2::geom_point() +
       ggplot2::geom_text(aes(label = score), nudge_y = 0.5) +
       ggplot2::geom_label(aes(label = rank, x = 0), nudge_y = 0.2) +
-      ggplot2::scale_x_continuous(limits = c(0, 1200), breaks = 12) +
       ggthemes::theme_clean() +
+      ggplot2::scale_x_continuous(limits = c(0, 1200), breaks = 12) +
       ggplot2::xlab("Scores") +
       ggplot2::ylab("Judging Contest Categories") +
-      ggplot2::ggtitle(label = paste(stringr::str_replace(input$individual_person, "_", " for "), 
-                                          filtered_individual$alternate),
-                  subtitle = paste(filtered_individual$contest_date, filtered_individual$contest_name))
+      ggplot2::ggtitle(label = stringr::str_replace(input$individual_person, "_", " for "),
+              subtitle = paste(filtered_individual$contest_date, filtered_individual$contest_name))
   })
 
 
@@ -179,17 +179,17 @@ server <- function(input, output, session) {
                     contest_date == input$team_year,
                     school_name == input$team_name)
 
-    ggplot2::ggplot(filtered_team, aes(x = score, y = reorder(contet_class, -score))) +
+    ggplot2::ggplot(filtered_team, aes(x = score, y = reorder(contest_class, -score))) +
       ggplot2::geom_point() +
       ggplot2::geom_text(aes(label = score), nudge_y = 0.5) +
       ggplot2::geom_label(aes(label = rank, x = 0), nudge_y = 0.2) +
-      ggplot2::scale_x_continuous(limits = c(0, 4800), breaks = 11) +
       ggthemes::theme_clean() +
+      ggplot2::scale_x_continuous(limits = c(0, 4800), breaks = 6) +
       ggplot2::xlab("Scores") +
       ggplot2::ylab("Judging Contest Categories") +
-      ggtitle(label = input$team_name,
-              subtitle = paste(filtered_team$date, filtered_team$contest_name)) +
-      ggplot2::facet_wrap(~ alternate, ncol = 1)
+      ggplot2::ggtitle(label = input$team_name,
+              subtitle = paste(filtered_team$contest_date, filtered_team$contest_name)) +
+    ggplot2::facet_wrap(~ alternate, ncol = 1)
   })
 }
 
