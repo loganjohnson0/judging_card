@@ -13,7 +13,7 @@ load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/indi
 
 team_url <- "https://raw.githubusercontent.com/loganjohnson0/judging_card/main/All_Team.parquet"
 team_path <- "All_Team.parquet"
-download.file(team_url, team_path, mode = "wb")
+download.file(team_url, team_path)
 team <- nanoparquet::read_parquet(team_path)
 
 individual <- individual |> 
