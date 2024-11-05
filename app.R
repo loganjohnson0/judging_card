@@ -161,7 +161,7 @@ server <- function(input, output, session) {
       ggplot2::geom_text(aes(label = score), nudge_y = 0.5) +
       ggplot2::geom_label(aes(label = rank, x = 0), nudge_y = 0.2) +
       ggthemes::theme_clean() +
-      ggplot2::scale_x_continuous(limits = c(0, 1200), breaks = 12) +
+      ggplot2::scale_x_continuous(limits = c(0, 1200)) +
       ggplot2::xlab("Scores") +
       ggplot2::ylab("Judging Contest Categories") +
       ggplot2::ggtitle(label = stringr::str_replace(input$individual_person, "_", " for "),
@@ -184,12 +184,12 @@ server <- function(input, output, session) {
       ggplot2::geom_text(aes(label = score), nudge_y = 0.5) +
       ggplot2::geom_label(aes(label = rank, x = 0), nudge_y = 0.2) +
       ggthemes::theme_clean() +
-      ggplot2::scale_x_continuous(limits = c(0, 4800), breaks = 6) +
+      ggplot2::scale_x_continuous(limits = c(0, 4800)) +
       ggplot2::xlab("Scores") +
       ggplot2::ylab("Judging Contest Categories") +
       ggplot2::ggtitle(label = input$team_name,
               subtitle = paste(filtered_team$contest_date, filtered_team$contest_name)) +
-    ggplot2::facet_wrap(~ alternate, ncol = 1)
+      ggplot2::facet_wrap(~ alternate, ncol = 1)
   })
 }
 
