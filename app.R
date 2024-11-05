@@ -5,10 +5,27 @@ library(ggthemes)
 library(dplyr)
 library(htmltools)
 library(stringr)
-library(duckplyr)
+library(nanoparquet)
 webr::install("markdown")
-Sys.setenv(DUCKPLYR_FORCE = TRUE)
 
+
+load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/individual.RData"))
+
+team_url <- "https://raw.githubusercontent.com/loganjohnson0/judging_card/main/All_Team.parquet"
+team_path <- "All_Team.parquet"
+download.file(team_url, team_path, mode = "wb")
+team <- nanoparquet::read_parquet(team_path)
+
+individual <- individual |> 
+  dplyr::mutate(student_school = paste(student_name, school_name, sep = "_"))
+
+students <- individual |> 
+  dplyr::distinct(student_name, school_name, .keep_all = TRUE) |> 
+  dplyr::arrange(student_name, school_name) |> 
+  dplyr::mutate(student_label = paste0(student_name, " (", school_name, ")"),
+              student_school = paste(student_name, school_name, sep = "_"))
+
+student_choices <- setNames(students$student_school, students$student_label)
 
 ui <- bslib::page_navbar(
     theme = bs_theme(preset = "lux"),
@@ -56,7 +73,7 @@ ui <- bslib::page_navbar(
 
             selectizeInput(inputId = "team_year",
               label = "Next, the Year the Contest was Held",
-              choices = sort(unique(lubridate::year(team$date))), 
+              choices = sort(unique(team$contest_date)), 
               multiple = TRUE,
               options = list(maxItems = 1, placeholder = "Select Contest",
                             closeAfterSelect = TRUE))),
@@ -101,33 +118,12 @@ ui <- bslib::page_navbar(
             card_header("Selected Contest, Year, and University", class = "bg-dark"),
 
             plotOutput("team_plot")
-          ), col_widths = c(-1, 10, -1), max_height = 450)
+          ), col_widths = c(-1, 10, -1), max_height = 500)
       ),
 
   )
 
 server <- function(input, output, session) {
-
-  individual_url <- "https://raw.githubusercontent.com/loganjohnson0/judging_card/main/individual.RData"
-  individual_path <- "individual.RData"
-  download.file(individual_url, individual_path)
-  individual <- readRDS(individual_path)
-
-  team_url <- "https://raw.githubusercontent.com/loganjohnson0/judging_card/main/All_Team.parquet"
-  team_path <- "All_Team.parquet"
-  download.file(team_url, team_path)
-  team <- duckplyr::duckplyr_df_from_parquet(team_path)
-
-  individual <- individual |> 
-  dplyr::mutate(student_school = paste(student_name, school_name, sep = "_"))
-
-students <- individual |> 
-  dplyr::distinct(student_name, school_name, .keep_all = TRUE) |> 
-  dplyr::arrange(student_name, school_name) |> 
-  dplyr::mutate(student_label = paste0(student_name, " (", school_name, ")"),
-              student_school = paste(student_name, school_name, sep = "_"))
-
-student_choices <- setNames(students$student_school, students$student_label)
 
   shiny::observeEvent(input$nav, {
     if (input$nav == "Individual Results") {
@@ -156,10 +152,10 @@ student_choices <- setNames(students$student_school, students$student_label)
     req(input$individual_person)
 
     filtered_individual <- individual |> 
-      dplyr::filter(contest_name == input$individual_contest) |> 
-      dplyr::filter(student_school == input$individual_person)
+      dplyr::filter(contest_name == input$individual_contest,
+                    student_school == input$individual_person)
 
-    ggplot2::ggplot(filtered_individual, aes(x = score, y = reorder(results_categories, -score))) +
+    ggplot2::ggplot(filtered_individual, aes(x = score, y = reorder(contest_class, -score))) +
       ggplot2::geom_point() +
       ggplot2::geom_text(aes(label = score), nudge_y = 0.5) +
       ggplot2::geom_label(aes(label = rank, x = 0), nudge_y = 0.2) +
@@ -167,8 +163,9 @@ student_choices <- setNames(students$student_school, students$student_label)
       ggthemes::theme_clean() +
       ggplot2::xlab("Scores") +
       ggplot2::ylab("Judging Contest Categories") +
-      ggtitle(label = stringr::str_replace(input$individual_person, "_", " for "),
-              subtitle = paste(filtered_individual$date, filtered_individual$contest_name))
+      ggplot2::ggtitle(label = paste(stringr::str_replace(input$individual_person, "_", " for "), 
+                                          filtered_individual$alternate),
+                  subtitle = paste(filtered_individual$contest_date, filtered_individual$contest_name))
   })
 
 
@@ -178,11 +175,11 @@ student_choices <- setNames(students$student_school, students$student_label)
     req(input$team_name)
 
     filtered_team <- team |> 
-      dplyr::filter(contest_name == input$team_contest) |> 
-      dplyr::filter(lubridate::year(date) == input$team_year) |> 
-      dplyr::filter(school_name == input$team_name)
+      dplyr::filter(contest_name == input$team_contest,
+                    contest_date == input$team_year,
+                    school_name == input$team_name)
 
-    ggplot2::ggplot(filtered_team, aes(x = score, y = reorder(results_categories, -score))) +
+    ggplot2::ggplot(filtered_team, aes(x = score, y = reorder(contet_class, -score))) +
       ggplot2::geom_point() +
       ggplot2::geom_text(aes(label = score), nudge_y = 0.5) +
       ggplot2::geom_label(aes(label = rank, x = 0), nudge_y = 0.2) +
@@ -191,7 +188,8 @@ student_choices <- setNames(students$student_school, students$student_label)
       ggplot2::xlab("Scores") +
       ggplot2::ylab("Judging Contest Categories") +
       ggtitle(label = input$team_name,
-              subtitle = paste(filtered_team$date, filtered_team$contest_name))
+              subtitle = paste(filtered_team$date, filtered_team$contest_name)) +
+      ggplot2::facet_wrap(~ alternate, ncol = 1)
   })
 }
 
