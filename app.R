@@ -2,15 +2,13 @@ library(shiny)
 library(bslib)
 library(ggplot2)
 library(ggthemes)
-library(scales)
 library(dplyr)
 library(htmltools)
-library(lubridate)
 library(stringr)
 webr::install("markdown")
 
 load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/individual.RData"))
-load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/team.RData"))
+load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/All_Team.parquet"))
 
 individual <- individual |> 
   dplyr::mutate(student_school = paste(student_name, school_name, sep = "_"))
@@ -33,7 +31,6 @@ ui <- bslib::page_navbar(
     sidebar = sidebar(
           width = 350,
           id = "sidebar",
-
 
   # Individual
         conditionalPanel(
@@ -65,8 +62,6 @@ ui <- bslib::page_navbar(
               options = list(maxItems = 1, placeholder = "Select Contest",
                             closeAfterSelect = TRUE))),
 
-
-
       conditionalPanel(
         condition = "input.nav == 'Team Results' && input.team_contest != ''",
 
@@ -77,8 +72,6 @@ ui <- bslib::page_navbar(
               options = list(maxItems = 1, placeholder = "Select Contest",
                             closeAfterSelect = TRUE))),
 
-
-              
       conditionalPanel(
           condition = "input.nav == 'Team Results' && input.team_contest != '' && input.team_year != ''",
           selectizeInput(inputId = "team_name",
@@ -161,12 +154,12 @@ server <- function(input, output, session) {
       ggplot2::geom_point() +
       ggplot2::geom_text(aes(label = score), nudge_y = 0.5) +
       ggplot2::geom_label(aes(label = rank, x = 0), nudge_y = 0.2) +
-      ggplot2::scale_x_continuous(limits = c(0, 1200), breaks = pretty_breaks(n = 12)) +
+      ggplot2::scale_x_continuous(limits = c(0, 1200), breaks = 12) +
       ggthemes::theme_clean() +
       ggplot2::xlab("Scores") +
       ggplot2::ylab("Judging Contest Categories") +
       ggtitle(label = stringr::str_replace(input$individual_person, "_", " for "),
-              subtitle = paste(lubridate::year(filtered_individual$date), filtered_individual$contest_name))
+              subtitle = paste(filtered_individual$date, filtered_individual$contest_name))
   })
 
 
@@ -184,12 +177,12 @@ server <- function(input, output, session) {
       ggplot2::geom_point() +
       ggplot2::geom_text(aes(label = score), nudge_y = 0.5) +
       ggplot2::geom_label(aes(label = rank, x = 0), nudge_y = 0.2) +
-      ggplot2::scale_x_continuous(limits = c(0, 4800), breaks = pretty_breaks(n = 11)) +
+      ggplot2::scale_x_continuous(limits = c(0, 4800), breaks = 11) +
       ggthemes::theme_clean() +
       ggplot2::xlab("Scores") +
       ggplot2::ylab("Judging Contest Categories") +
       ggtitle(label = input$team_name,
-              subtitle = paste(lubridate::year(filtered_team$date), filtered_team$contest_name))
+              subtitle = paste(filtered_team$date, filtered_team$contest_name))
   })
 }
 
