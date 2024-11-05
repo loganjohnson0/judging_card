@@ -5,21 +5,10 @@ library(ggthemes)
 library(dplyr)
 library(htmltools)
 library(stringr)
+library(duckplyr)
 webr::install("markdown")
+Sys.setenv(DUCKPLYR_FORCE = TRUE)
 
-load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/individual.RData"))
-load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/All_Team.parquet"))
-
-individual <- individual |> 
-  dplyr::mutate(student_school = paste(student_name, school_name, sep = "_"))
-
-students <- individual |> 
-  dplyr::distinct(student_name, school_name, .keep_all = TRUE) |> 
-  dplyr::arrange(student_name, school_name) |> 
-  dplyr::mutate(student_label = paste0(student_name, " (", school_name, ")"),
-              student_school = paste(student_name, school_name, sep = "_"))
-
-student_choices <- setNames(students$student_school, students$student_label)
 
 ui <- bslib::page_navbar(
     theme = bs_theme(preset = "lux"),
@@ -119,6 +108,26 @@ ui <- bslib::page_navbar(
 
 server <- function(input, output, session) {
 
+  individual_url <- "https://raw.githubusercontent.com/loganjohnson0/judging_card/main/individual.RData"
+  individual_path <- "individual.RData"
+  download.file(individual_url, individual_path)
+  individual <- readRDS(individual_path)
+
+  team_url <- "https://raw.githubusercontent.com/loganjohnson0/judging_card/main/All_Team.parquet"
+  team_path <- "All_Team.parquet"
+  download.file(team_url, team_path)
+  team <- duckplyr::duckplyr_df_from_parquet(team_path)
+
+  individual <- individual |> 
+  dplyr::mutate(student_school = paste(student_name, school_name, sep = "_"))
+
+students <- individual |> 
+  dplyr::distinct(student_name, school_name, .keep_all = TRUE) |> 
+  dplyr::arrange(student_name, school_name) |> 
+  dplyr::mutate(student_label = paste0(student_name, " (", school_name, ")"),
+              student_school = paste(student_name, school_name, sep = "_"))
+
+student_choices <- setNames(students$student_school, students$student_label)
 
   shiny::observeEvent(input$nav, {
     if (input$nav == "Individual Results") {
