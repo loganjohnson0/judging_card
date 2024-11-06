@@ -167,23 +167,40 @@ server <- function(input, output, session) {
   })
 
   filtered_team <- shiny::reactive({
-
-    selected_team_contest <- input$team_contest
-    selected_team_year <- input$team_year
-    selected_team_name <- input$team_name
+    req(input$team_contest)
+    req(input$team_year)
+    req(input$team_name)
 
     team |> 
-      dplyr::filter(contest_name == selected_team_contest,
-                    contest_date == selected_team_year,
-                    school_name == selected_team_name)
+      dplyr::filter(contest_name == input$team_contest,
+                    contest_date == input$team_year,
+                    school_name == input$team_name)
   })
 
   shiny::observeEvent(input$team_contest, {
+    possible_year <- team |> 
+      dplyr::filter(contest_name == input$team_contest) |> 
+      dplyr::pull(contest_date) |> unique() |> sort()
+      
     shiny::updateSelectizeInput(session, inputId = "team_year", 
-                          choices = sort(unique(filtered_team()$contest_date)), 
+                          choices = possible_year, 
                           server = TRUE, selected = "",
                           options = list(maxItems = 1, placeholder = "Select Year",
                                           closeAfterSelect = TRUE))
+  })
+
+  shiny::observeEvent(input$team_year, {
+    possible_school <- team |> 
+      dplyr::filter(contest_name == input$team_contest, 
+                    contest_date == input$team_year) |> 
+      dplyr::pull(school_name) |> unique() |> sort()
+
+    shiny::updateSelectizeInput(session, inputId = "team_name", 
+                          choices = possible_school, 
+                          server = TRUE, selected = "",
+                          options = list(maxItems = 1, placeholder = "Select University",
+                                          closeAfterSelect = TRUE))
+
   })
 
   output$team_plot <- shiny::renderPlot({
