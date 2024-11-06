@@ -147,6 +147,11 @@ server <- function(input, output, session) {
                           closeAfterSelect = TRUE,
                           placeholder = "Individual's Name"))
   
+  shiny::updateSelectizeInput(session, inputId = "team_contest", 
+                  choices = sort(unique(filtered_team()$contest_name)), server = TRUE, selected = "",
+                  options = list(maxItems = 1, 
+                          closeAfterSelect = TRUE,
+                          placeholder = "Individual's Name"))
 
   output$individual_plot <- shiny::renderPlot({
     req(input$individual_contest)
@@ -168,18 +173,25 @@ server <- function(input, output, session) {
               subtitle = paste(filtered_individual$contest_date, filtered_individual$contest_name))
   })
 
+  filtered_team <- shiny::reactive({
+
+    selected_team_contest <- input$team_contest
+    selected_team_year <- input$team_year
+    selected_team_name <- input$team_name
+
+    team |> 
+      dplyr::filter(contest_name == selected_team_contest,
+                    contest_date == selected_team_year,
+                    school_name == selected_team_name)
+  })
+
 
   output$team_plot <- shiny::renderPlot({
     req(input$team_contest)
     req(input$team_year)
     req(input$team_name)
 
-    filtered_team <- team |> 
-      dplyr::filter(contest_name == input$team_contest,
-                    contest_date == input$team_year,
-                    school_name == input$team_name)
-
-    ggplot2::ggplot(filtered_team, aes(x = score, y = reorder(contest_class, -score))) +
+    ggplot2::ggplot(filtered_team(), aes(x = score, y = reorder(contest_class, -score))) +
       ggplot2::geom_point() +
       ggplot2::geom_text(aes(label = score), nudge_y = 0.5) +
       ggplot2::geom_label(aes(label = rank, x = 0), nudge_y = 0.2) +
@@ -188,7 +200,7 @@ server <- function(input, output, session) {
       ggplot2::xlab("Scores") +
       ggplot2::ylab("Judging Contest Categories") +
       ggplot2::ggtitle(label = input$team_name,
-              subtitle = paste(filtered_team$contest_date, filtered_team$contest_name)) +
+              subtitle = paste(filtered_team()$contest_date, filtered_team()$contest_name)) +
       ggplot2::facet_wrap(~ alternate, ncol = 1)
   })
 }
