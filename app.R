@@ -73,10 +73,8 @@ ui <- bslib::page_navbar(
 
             selectizeInput(inputId = "team_year",
               label = "Next, the Year the Contest was Held",
-              choices = sort(unique(team$contest_date)), 
-              multiple = TRUE,
-              options = list(maxItems = 1, placeholder = "Select Contest",
-                            closeAfterSelect = TRUE))),
+              choices = NULL, 
+              multiple = TRUE)),
 
       conditionalPanel(
           condition = "input.nav == 'Team Results' && input.team_contest != '' && input.team_year != ''",
@@ -109,7 +107,7 @@ ui <- bslib::page_navbar(
             card_header("Selected Contest, Individual, and University", class = "bg-dark"),
 
             plotOutput("individual_plot")
-          ), col_widths = c(-1, 10, -1), max_height = 450)
+          ), col_widths = c(-1, 10, -1), max_height = 600)
       ),
 
     nav_panel("Team Results", 
@@ -119,7 +117,7 @@ ui <- bslib::page_navbar(
             card_header("Selected Contest, Year, and University", class = "bg-dark"),
 
             plotOutput("team_plot")
-          ), col_widths = c(-1, 10, -1), max_height = 500)
+          ), col_widths = c(-1, 10, -1), max_height = 600)
       ),
 
   )
@@ -147,11 +145,6 @@ server <- function(input, output, session) {
                           closeAfterSelect = TRUE,
                           placeholder = "Individual's Name"))
   
-  shiny::updateSelectizeInput(session, inputId = "team_contest", 
-                  choices = sort(unique(filtered_team()$contest_name)), server = TRUE, selected = "",
-                  options = list(maxItems = 1, 
-                          closeAfterSelect = TRUE,
-                          placeholder = "Individual's Name"))
 
   output$individual_plot <- shiny::renderPlot({
     req(input$individual_contest)
@@ -185,6 +178,13 @@ server <- function(input, output, session) {
                     school_name == selected_team_name)
   })
 
+  shiny::observeEvent(input$team_contest, {
+    shiny::updateSelectizeInput(session, inputId = "team_year", 
+                          choices = sort(unique(filtered_team()$contest_date)), 
+                          server = TRUE, selected = "",
+                          options = list(maxItems = 1, placeholder = "Select Year",
+                                          closeAfterSelect = TRUE))
+  })
 
   output$team_plot <- shiny::renderPlot({
     req(input$team_contest)
