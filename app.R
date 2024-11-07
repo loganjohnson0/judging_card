@@ -110,17 +110,15 @@ ui <- bslib::page_navbar(
           ), col_widths = c(-1, 10, -1), max_height = 600)
       ),
 
-    nav_panel("Team Results", 
+      nav_panel("Team Results", 
     
-        layout_columns(
-          card(
-            card_header("Selected Contest, Year, and University", class = "bg-dark"),
+      layout_columns(
+        card(
+          card_header("Selected Contest, Year, and University", class = "bg-dark"),
 
-            plotOutput("team_plot")
-          ), col_widths = c(-1, 10, -1), max_height = 600)
-      ),
-
-  )
+          plotOutput("team_plot")), col_widths = c(-1, 10, -1), max_height = 600)
+          ),
+    )
 
 server <- function(input, output, session) {
 
@@ -208,7 +206,7 @@ server <- function(input, output, session) {
     req(input$team_year)
     req(input$team_name)
 
-    ggplot2::ggplot(filtered_team(), aes(x = score, y = reorder(contest_class, -score))) +
+    ggplot2::ggplot(filtered_team() |> dplyr::filter(alternate == "Team 1"), aes(x = score, y = reorder(contest_class, -score))) +
       ggplot2::geom_point() +
       ggplot2::geom_text(aes(label = score), nudge_y = 0.5) +
       ggplot2::geom_label(aes(label = rank, x = 0), nudge_y = 0.2) +
@@ -217,8 +215,7 @@ server <- function(input, output, session) {
       ggplot2::xlab("Scores") +
       ggplot2::ylab("Judging Contest Categories") +
       ggplot2::ggtitle(label = input$team_name,
-              subtitle = paste(filtered_team()$contest_date, filtered_team()$contest_name)) +
-      ggplot2::facet_wrap(~ alternate, ncol = 1)
+              subtitle = paste(filtered_team()$contest_date, filtered_team()$contest_name))
   })
 }
 
