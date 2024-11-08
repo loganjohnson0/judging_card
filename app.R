@@ -81,11 +81,16 @@ ui <- bslib::page_navbar(
           
         selectizeInput(inputId = "team_name",
             label = "Finally, Select the University",
-            multiple = TRUE, 
-            choices = sort(unique(team$school_name)),
-            options = list(maxItems = 1, placeholder = "Select University",
-                closeAfterSelect = TRUE))
-        )
+            choices = NULL,
+            multiple = TRUE)),
+
+      conditionalPanel(
+          condition = "input.nav == 'Team Results' && input.team_contest != '' && input.team_year != '' && input.team_name != ''",
+              
+        selectizeInput(inputId = "team_alt",
+            label = "(Optional) Select Alternative Teams",
+            choices = NULL,
+            multiple = TRUE))
       ),
 
     nav_spacer(),
@@ -168,11 +173,13 @@ server <- function(input, output, session) {
     req(input$team_contest)
     req(input$team_year)
     req(input$team_name)
+    req(input$team_alt)
 
     team |> 
       dplyr::filter(contest_name == input$team_contest,
                     contest_date == input$team_year,
-                    school_name == input$team_name)
+                    school_name == input$team_name,
+                    alternate == input$team_alt)
   })
 
   shiny::observeEvent(input$team_contest, {
@@ -201,12 +208,28 @@ server <- function(input, output, session) {
 
   })
 
+  shiny::observeEvent(input$team_year, {
+    possible_alt <- team |> 
+      dplyr::filter(contest_name == input$team_contest, 
+                    contest_date == input$team_year,
+                    school_name == input$team_name) |> 
+      dplyr::pull(alternate) |> unique() |> sort()
+
+    shiny::updateSelectizeInput(session, inputId = "team_alt", 
+                          choices = possible_alt, 
+                          server = TRUE, selected = "Team 1",
+                          options = list(maxItems = 1, placeholder = "Select Alternative Teams",
+                                          closeAfterSelect = TRUE))
+
+  })
+
+
   output$team_plot <- shiny::renderPlot({
     req(input$team_contest)
     req(input$team_year)
     req(input$team_name)
 
-    ggplot2::ggplot(filtered_team() |> dplyr::filter(alternate == "Team 1"), aes(x = score, y = reorder(contest_class, -score))) +
+    ggplot2::ggplot(filtered_team(), aes(x = score, y = reorder(contest_class, -score))) +
       ggplot2::geom_point() +
       ggplot2::geom_text(aes(label = score), nudge_y = 0.5) +
       ggplot2::geom_label(aes(label = rank, x = 0), nudge_y = 0.2) +
