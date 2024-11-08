@@ -26,6 +26,15 @@ webr::install("markdown")
   download.file(team_url, team_path)
   team <- nanoparquet::read_parquet(team_path)
 
+  individual_max <- tibble::tibble(results_categories = c("Beef Grading", "Beef Judging", "Lamb Judging", 
+                                                          "Overall", "Overall Beef", "Pork Judging", 
+                                                          "Total Placing", "Reasons/Questions", "Specifications"),
+                                  max_score = c(300, 300, 150, 
+                                                1150, 600, 300, 
+                                                500, 250, 100))
+  team_max  <-   individual_max  |> 
+    mutate(max_score = max_score * 4)
+
 ui <- bslib::page_navbar(
     theme = bs_theme(preset = "lux"),
 
@@ -161,6 +170,7 @@ server <- function(input, output, session) {
       ggplot2::geom_point() +
       ggplot2::geom_text(aes(label = score), nudge_y = 0.5) +
       ggplot2::geom_label(aes(label = rank, x = 0), nudge_y = 0.2) +
+      ggplot2::geom_point(data = individual_max, aes(x = max_score, y = contest_class), color = "green", inherit.aes = FALSE) +
       ggthemes::theme_clean() +
       ggplot2::scale_x_continuous(limits = c(0, 1200)) +
       ggplot2::xlab("Scores") +
@@ -208,7 +218,7 @@ server <- function(input, output, session) {
 
   })
 
-  shiny::observeEvent(input$team_year, {
+  shiny::observeEvent(input$team_name, {
     possible_alt <- team |> 
       dplyr::filter(contest_name == input$team_contest, 
                     contest_date == input$team_year,
@@ -233,6 +243,7 @@ server <- function(input, output, session) {
       ggplot2::geom_point() +
       ggplot2::geom_text(aes(label = score), nudge_y = 0.5) +
       ggplot2::geom_label(aes(label = rank, x = 0), nudge_y = 0.2) +
+      ggplot2::geom_point(data = team_max, aes(x = max_score, y = contest_class), color = "green", inherit.aes = FALSE) +
       ggthemes::theme_clean() +
       ggplot2::scale_x_continuous(limits = c(0, 4800)) +
       ggplot2::xlab("Scores") +
