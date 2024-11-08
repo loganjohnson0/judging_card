@@ -26,7 +26,7 @@ webr::install("markdown")
   download.file(team_url, team_path)
   team <- nanoparquet::read_parquet(team_path)
 
-  individual_max <- tibble::tibble(results_categories = c("Beef Grading", "Beef Judging", "Lamb Judging", 
+  individual_max <- tibble::tibble(contest_class = c("Beef Grading", "Beef Judging", "Lamb Judging", 
                                                           "Overall", "Overall Beef", "Pork Judging", 
                                                           "Total Placing", "Reasons/Questions", "Specifications"),
                                   max_score = c(300, 300, 150, 
