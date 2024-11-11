@@ -8,18 +8,13 @@ library(stringr)
 library(nanoparquet)
 webr::install("markdown")
 
-  load(url("https://raw.githubusercontent.com/loganjohnson0/judging_card/main/individual.RData"))
+  individual_url <- "https://raw.githubusercontent.com/loganjohnson0/judging_card/main/All_Individual.parquet"
+  individual_path <- "All_Team.parquet"
+  download.file(individual_url, individual_path)
+  individual <- nanoparquet::read_parquet(individual_path)
 
   individual <- individual |> 
-    dplyr::mutate(student_school = paste(student_name, school_name, sep = "_"))
-
-  students <- individual |> 
-    dplyr::distinct(student_name, school_name, .keep_all = TRUE) |> 
-    dplyr::arrange(student_name, school_name) |> 
-    dplyr::mutate(student_label = paste0(student_name, " (", school_name, ")"),
-                student_school = paste(student_name, school_name, sep = "_"))
-
-  student_choices <- setNames(students$student_school, students$student_label)
+    dplyr::mutate(student_school = paste(student_name, school_name, sep = " at "))
 
   team_url <- "https://raw.githubusercontent.com/loganjohnson0/judging_card/main/All_Team.parquet"
   team_path <- "All_Team.parquet"
@@ -33,7 +28,7 @@ webr::install("markdown")
                                                 1150, 600, 300, 
                                                 500, 250, 100))
   team_max  <-   individual_max  |> 
-    mutate(max_score = max_score * 4)
+    dplyr::mutate(max_score = max_score * 4)
 
 ui <- bslib::page_navbar(
     theme = bs_theme(preset = "lux"),
@@ -151,22 +146,33 @@ server <- function(input, output, session) {
     )
   })
 
-  shiny::updateSelectizeInput(session, inputId = "individual_person", 
-                  choices = student_choices, server = TRUE, selected = "",
-                  options = list(maxItems = 1, 
-                          closeAfterSelect = TRUE,
-                          placeholder = "Individual's Name"))
+  filtered_individual <-  shiny::reactive({
+    req(input$individual_contest)
+    req(input$individual_person)
+
+    individual |> 
+      dplyr::filter(contest_name == input$individual_contest,
+                    student_school == input$individual_person)
+  })
+
+  shiny::observeEvent(input$individual_contest, {
+    possible_students <- individual |> 
+      dplyr::filter(contest_name == input$individual_contest) |> 
+      dplyr::pull(student_school) |> unique() |> sort()
+      
+    shiny::updateSelectizeInput(session, inputId = "individual_person", 
+                          choices = possible_students, 
+                          server = TRUE, selected = "",
+                          options = list(maxItems = 1, placeholder = "Individual's Name",
+                                          closeAfterSelect = TRUE))
+  })
   
 
   output$individual_plot <- shiny::renderPlot({
     req(input$individual_contest)
     req(input$individual_person)
 
-    filtered_individual <- individual |> 
-      dplyr::filter(contest_name == input$individual_contest,
-                    student_school == input$individual_person)
-
-    ggplot2::ggplot(filtered_individual, aes(x = score, y = reorder(contest_class, -score))) +
+    ggplot2::ggplot(filtered_individual(), aes(x = score, y = reorder(contest_class, -score))) +
       ggplot2::geom_point() +
       ggplot2::geom_text(aes(label = score), nudge_y = 0.5) +
       ggplot2::geom_label(aes(label = rank, x = 0), nudge_y = 0.2) +
@@ -175,8 +181,8 @@ server <- function(input, output, session) {
       ggplot2::scale_x_continuous(limits = c(0, 1200)) +
       ggplot2::xlab("Scores") +
       ggplot2::ylab("Judging Contest Categories") +
-      ggplot2::ggtitle(label = stringr::str_replace(input$individual_person, "_", " for "),
-              subtitle = paste(filtered_individual$contest_date, filtered_individual$contest_name))
+      ggplot2::ggtitle(label = input$individual_person,
+              subtitle = paste(filtered_individual()$contest_date, filtered_individual()$contest_name))
   })
 
   filtered_team <- shiny::reactive({
