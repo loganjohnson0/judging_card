@@ -43,22 +43,24 @@ ui <- bslib::page_navbar(
 
   # Individual
         conditionalPanel(
-          condition = "input.nav == 'Individual Results'",
+          condition = "input.nav == 'Individual Results' && input.team_contest == ''",
             
             selectizeInput(inputId = "individual_contest",
-              label = "First, Select the Meat Judging Contest",
-              choices =  sort(unique(individual$contest_name)), 
-              multiple = TRUE,
-              options = list(maxItems = 1, placeholder = "Select Contest",
-                            closeAfterSelect = TRUE))),
+                          label = "Select the Meat Judging Contest",
+                          choices =  sort(unique(individual$contest_name)), 
+                          multiple = TRUE,
+                          options = list(maxItems = 1, placeholder = "Select Contest",
+                                        closeAfterSelect = TRUE)),
 
-      conditionalPanel(
-        condition = "input.nav == 'Individual Results' && input.individual_contest != ''",
-            
+            selectizeInput(inputId = "individual_year",
+                          label = "Select the Year the Contest was Held",
+                          choices = NULL, 
+                          multiple = TRUE),
+
             selectizeInput(inputId = "individual_person", 
-              label = "Next, Select the Individual (School)", 
-              multiple = TRUE,
-              choices = NULL)),
+                          label = "Select the Person", 
+                          multiple = TRUE,
+                          choices = NULL)),
 
 
   # Team
@@ -66,35 +68,30 @@ ui <- bslib::page_navbar(
         condition = "input.nav == 'Team Results' && input.individual_contest == ''",
 
             selectizeInput(inputId = "team_contest",
-              label = "First, Select the Meat Judging Contest",
-              choices = sort(unique(team$contest_name)), 
-              multiple = TRUE,
-              options = list(maxItems = 1, placeholder = "Select Contest",
-                            closeAfterSelect = TRUE))),
-
-      conditionalPanel(
-        condition = "input.nav == 'Team Results' && input.team_contest != ''",
+                          label = "Select the Meat Judging Contest",
+                          choices = sort(unique(team$contest_name)), 
+                          multiple = TRUE,
+                          options = list(maxItems = 1, placeholder = "Select Contest",
+                                        closeAfterSelect = TRUE)),
 
             selectizeInput(inputId = "team_year",
-              label = "Next, the Year the Contest was Held",
-              choices = NULL, 
-              multiple = TRUE)),
+                          label = "Select the Year the Contest was Held",
+                          choices = NULL, 
+                          multiple = TRUE),
 
-      conditionalPanel(
-          condition = "input.nav == 'Team Results' && input.team_contest != '' && input.team_year != ''",
-          
-        selectizeInput(inputId = "team_name",
-            label = "Finally, Select the University",
-            choices = NULL,
-            multiple = TRUE)),
+            selectizeInput(inputId = "team_name",
+                          label = "Select the University",
+                          choices = NULL,
+                          multiple = TRUE)),
+
 
       conditionalPanel(
           condition = "input.nav == 'Team Results' && input.team_contest != '' && input.team_year != '' && input.team_name != ''",
               
-        selectizeInput(inputId = "team_alt",
-            label = "(Optional) Select Alternative Teams",
-            choices = NULL,
-            multiple = TRUE))
+            selectizeInput(inputId = "team_alt",
+                          label = "(Optional) Select Alternate Teams",
+                          choices = NULL,
+                          multiple = TRUE))
       ),
 
     nav_spacer(),
@@ -126,7 +123,7 @@ ui <- bslib::page_navbar(
           card_header("Selected Contest, Year, and University", class = "bg-dark"),
 
           plotOutput("team_plot")), col_widths = c(-1, 10, -1), max_height = 600)
-          ),
+          )
     )
 
 server <- function(input, output, session) {
@@ -149,23 +146,41 @@ server <- function(input, output, session) {
   filtered_individual <-  shiny::reactive({
     req(input$individual_contest)
     req(input$individual_person)
+    req(input$individual_year)
 
     individual |> 
       dplyr::filter(contest_name == input$individual_contest,
-                    student_school == input$individual_person)
+                    student_school == input$individual_person,
+                    contest_date == input$individual_year)
   })
 
   shiny::observeEvent(input$individual_contest, {
-    possible_students <- individual |> 
-      dplyr::filter(contest_name == input$individual_contest) |> 
-      dplyr::pull(student_school) |> unique() |> sort()
+
+      individual_possible_year <- individual |> 
+        dplyr::filter(contest_name == input$individual_contest) |> 
+        dplyr::pull(contest_date) |> unique() |> sort()
       
-    shiny::updateSelectizeInput(session, inputId = "individual_person", 
-                          choices = possible_students, 
-                          server = TRUE, selected = "",
-                          options = list(maxItems = 1, placeholder = "Individual's Name",
-                                          closeAfterSelect = TRUE))
+    shiny::updateSelectizeInput(session, inputId = "individual_year", 
+                              choices = individual_possible_year, 
+                              server = TRUE, selected = "",
+                              options = list(maxItems = 1, placeholder = "Select Year",
+                                            closeAfterSelect = TRUE))
   })
+
+  shiny::observeEvent(input$individual_year, {
+
+    individual_possible_name <- individual |> 
+      dplyr::filter(contest_name == input$individual_contest,
+                    contest_date == input$individual_year) |> 
+      dplyr::arrange(school_name, student_name) |> 
+      dplyr::pull(student_school) |> unique()
+    
+  shiny::updateSelectizeInput(session, inputId = "individual_person", 
+                            choices = individual_possible_name, 
+                            server = TRUE, selected = "",
+                            options = list(maxItems = 1, placeholder = "Select Individual's Name",
+                                          closeAfterSelect = TRUE))
+})
   
 
   output$individual_plot <- shiny::renderPlot({
@@ -199,25 +214,25 @@ server <- function(input, output, session) {
   })
 
   shiny::observeEvent(input$team_contest, {
-    possible_year <- team |> 
+    team_possible_year <- team |> 
       dplyr::filter(contest_name == input$team_contest) |> 
       dplyr::pull(contest_date) |> unique() |> sort()
       
     shiny::updateSelectizeInput(session, inputId = "team_year", 
-                          choices = possible_year, 
+                          choices = team_possible_year, 
                           server = TRUE, selected = "",
                           options = list(maxItems = 1, placeholder = "Select Year",
                                           closeAfterSelect = TRUE))
   })
 
   shiny::observeEvent(input$team_year, {
-    possible_school <- team |> 
+    team_possible_school <- team |> 
       dplyr::filter(contest_name == input$team_contest, 
                     contest_date == input$team_year) |> 
       dplyr::pull(school_name) |> unique() |> sort()
 
     shiny::updateSelectizeInput(session, inputId = "team_name", 
-                          choices = possible_school, 
+                          choices = team_possible_school, 
                           server = TRUE, selected = "",
                           options = list(maxItems = 1, placeholder = "Select University",
                                           closeAfterSelect = TRUE))
@@ -225,14 +240,14 @@ server <- function(input, output, session) {
   })
 
   shiny::observeEvent(input$team_name, {
-    possible_alt <- team |> 
+    team_possible_alt <- team |> 
       dplyr::filter(contest_name == input$team_contest, 
                     contest_date == input$team_year,
                     school_name == input$team_name) |> 
       dplyr::pull(alternate) |> unique() |> sort()
 
     shiny::updateSelectizeInput(session, inputId = "team_alt", 
-                          choices = possible_alt, 
+                          choices = team_possible_alt, 
                           server = TRUE, selected = "Team 1",
                           options = list(maxItems = 1, placeholder = "Select Alternative Teams",
                                           closeAfterSelect = TRUE))
