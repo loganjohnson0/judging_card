@@ -167,22 +167,6 @@ server <- function(input, output, session) {
         dplyr::filter(contest_date == input$individual_year)
     }
 
-    if (!isTruthy(input$individual_contest) && !isTruthy(input$individual_year)) {
-
-      shiny::updateSelectizeInput(
-        session,
-        inputId = "individual_person",
-        choices = NULL,
-        server = TRUE,
-        selected = "",
-        options = list(
-          maxItems = 1,
-          placeholder = "Select the Person",
-          closeAfterSelect = TRUE
-        )
-      )
-      return()
-    }
 
     individual_possible_person <- filtered_data %>%
       dplyr::pull(student_school) %>%
