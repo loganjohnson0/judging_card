@@ -54,13 +54,20 @@ ui <- bslib::page_navbar(
 
             selectizeInput(inputId = "individual_year",
                           label = "Select the Year the Contest was Held",
-                          choices = NULL, 
-                          multiple = TRUE),
+                          choices = sort(unique(individual$contest_date)), 
+                          multiple = TRUE,
+                          options = list(maxItems = 1, placeholder = "Select Year",
+                                        closeAfterSelect = TRUE))
+                                      ),
+
+        conditionalPanel(
+          condition = "input.nav == 'Individual Results' && (input.individual_contest != '' || input.individual_year != '')",
 
             selectizeInput(inputId = "individual_person", 
                           label = "Select the Person", 
                           multiple = TRUE,
-                          choices = NULL)),
+                          choices = NULL),
+                        ),
 
 
   # Team
@@ -143,49 +150,83 @@ server <- function(input, output, session) {
     )
   })
 
-  filtered_individual <-  shiny::reactive({
-    req(input$individual_contest)
+  shiny::observeEvent({
+    input$individual_contest
+    input$individual_year
+  }, {
+
+    filtered_data <- individual
+
+    if (isTruthy(input$individual_contest)) {
+      filtered_data <- filtered_data %>%
+        dplyr::filter(contest_name == input$individual_contest)
+    }
+
+    if (isTruthy(input$individual_year)) {
+      filtered_data <- filtered_data %>%
+        dplyr::filter(contest_date == input$individual_year)
+    }
+
+    if (!isTruthy(input$individual_contest) && !isTruthy(input$individual_year)) {
+
+      shiny::updateSelectizeInput(
+        session,
+        inputId = "individual_person",
+        choices = NULL,
+        server = TRUE,
+        selected = "",
+        options = list(
+          maxItems = 1,
+          placeholder = "Select the Person",
+          closeAfterSelect = TRUE
+        )
+      )
+      return()
+    }
+
+    individual_possible_person <- filtered_data %>%
+      dplyr::pull(student_school) %>%
+      unique() %>%
+      sort()
+
+    shiny::updateSelectizeInput(
+      session,
+      inputId = "individual_person",
+      choices = individual_possible_person,
+      server = TRUE,
+      selected = "",
+      options = list(
+        maxItems = 1,
+        placeholder = "Select the Person",
+        closeAfterSelect = TRUE
+      )
+    )
+  })
+
+  filtered_individual <- shiny::reactive({
     req(input$individual_person)
-    req(input$individual_year)
+    req(input$individual_contest)
 
-    individual |> 
-      dplyr::filter(contest_name == input$individual_contest,
-                    student_school == input$individual_person,
-                    contest_date == input$individual_year)
+    filtered_data <- individual
+
+    if (isTruthy(input$individual_contest)) {
+      filtered_data <- filtered_data %>%
+        dplyr::filter(contest_name == input$individual_contest)
+    }
+
+    if (isTruthy(input$individual_year)) {
+      filtered_data <- filtered_data %>%
+        dplyr::filter(contest_date == input$individual_year)
+    }
+
+    filtered_data <- filtered_data %>%
+      dplyr::filter(student_school == input$individual_person)
+
+    filtered_data
   })
-
-  shiny::observeEvent(input$individual_contest, {
-
-      individual_possible_year <- individual |> 
-        dplyr::filter(contest_name == input$individual_contest) |> 
-        dplyr::pull(contest_date) |> unique() |> sort()
-      
-    shiny::updateSelectizeInput(session, inputId = "individual_year", 
-                              choices = individual_possible_year, 
-                              server = TRUE, selected = "",
-                              options = list(maxItems = 1, placeholder = "Select Year",
-                                            closeAfterSelect = TRUE))
-  })
-
-  shiny::observeEvent(input$individual_year, {
-
-    individual_possible_name <- individual |> 
-      dplyr::filter(contest_name == input$individual_contest,
-                    contest_date == input$individual_year) |> 
-      dplyr::arrange(school_name, student_name) |> 
-      dplyr::pull(student_school) |> unique()
-    
-  shiny::updateSelectizeInput(session, inputId = "individual_person", 
-                            choices = individual_possible_name, 
-                            server = TRUE, selected = "",
-                            options = list(maxItems = 1, placeholder = "Select Individual's Name",
-                                          closeAfterSelect = TRUE))
-})
-  
 
   output$individual_plot <- shiny::renderPlot({
-    req(input$individual_contest)
-    req(input$individual_person)
+    req(filtered_individual())
 
     ggplot2::ggplot(filtered_individual(), aes(x = score, y = reorder(contest_class, -score))) +
       ggplot2::geom_point() +
@@ -196,8 +237,10 @@ server <- function(input, output, session) {
       ggplot2::scale_x_continuous(limits = c(0, 1200)) +
       ggplot2::xlab("Scores") +
       ggplot2::ylab("Judging Contest Categories") +
-      ggplot2::ggtitle(label = input$individual_person,
-              subtitle = paste(filtered_individual()$contest_date, filtered_individual()$contest_name))
+      ggplot2::ggtitle(
+        label = input$individual_person,
+        subtitle = paste(filtered_individual()$contest_date, filtered_individual()$contest_name)
+      )
   })
 
   filtered_team <- shiny::reactive({
