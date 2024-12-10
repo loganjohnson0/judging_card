@@ -6,7 +6,7 @@ library(dplyr)
 library(htmltools)
 library(stringr)
 library(nanoparquet)
-webr::install("markdown")
+library(markdown)
 
   individual_url <- "https://raw.githubusercontent.com/loganjohnson0/judging_card/main/All_Individual.parquet"
   individual_path <- "All_Team.parquet"
